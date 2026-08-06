@@ -14,3 +14,5 @@ This is a local/server‑side utility that converts downloaded A3‑sized PDF pa
 The project is designed with "vibe coding" – it can be set up with minimal coding experience, using deployment helpers like Trae and Claude.
 Before launching, execute setup.bat (though it may not install everything, so ensure Node.js is already installed).
 To run the tool, you can either use wtstart.bat (if you have Windows Terminal) or simply run start.bat.
+
+致谢，本软件引用了paddlepaddle项目，papercut项目，本代码遵循相应的许可协议。
