@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A3 试卷智能切割系统 - 自动版面分析 A3 转 A4</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 顶部导航 -->
+        <header class="navbar">
+            <div class="branding">
+                <span class="material-icons logo-icon">content_cut</span>
+                <span class="logo-text">PaperCut AI</span>
+            </div>
+
+            <div class="top-nav-controls">
+                <button id="changeFileBtn" class="btn secondary small-btn" title="更换文件">
+                    <span class="material-icons">folder_open</span> 切换文件
+                </button>
+                <div class="v-divider"></div>
+                <div class="page-nav-compact">
+                    <button id="prevPageBtn" class="btn icon-only" disabled>
+                        <span class="material-icons">chevron_left</span>
+                    </button>
+                    <span id="pageInfo" class="page-number-display">0 / 0</span>
+                    <button id="nextPageBtn" class="btn icon-only" disabled>
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="user-profile">
+                <span id="apiStatus" class="api-status status-disconnected">
+                    <span class="status-dot"></span>
+                    <span class="status-text">AI 后端未连接</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- 三栏布局主体 -->
+        <main class="main-layout">
+            <!-- 左侧：缩略图 -->
+            <aside class="left-panel custom-scrollbar" id="thumbnailsPanel">
+            </aside>
+
+            <!-- 中间：工作区 -->
+            <section class="center-panel" id="canvasContainer">
+                <div id="dragOverlay" class="drag-overlay hidden">
+                    <span class="material-icons">cloud_upload</span>
+                    <p>释放文件以上传</p>
+                </div>
+
+                <div id="canvasWrapper" class="canvas-wrapper">
+                    <div class="empty-state" id="emptyState">
+                        <span class="material-icons">cloud_upload</span>
+                        <h3>点击上传或拖拽文件</h3>
+                        <p class="sub-text">支持 A3 PDF 或图片文件，AI 自动识别版面并推荐切割点</p>
+                        <button id="uploadBtn" class="btn primary large-btn">
+                            选择文件
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI 分析进度遮罩 -->
+                <div id="analyzingOverlay" class="analyzing-overlay hidden">
+                    <div class="analyzing-content">
+                        <div class="spinner"></div>
+                        <p id="analyzingText">正在分析版面结构...</p>
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <p id="progressText" class="progress-text">0 / 0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：控制面板 -->
+            <aside class="right-panel custom-scrollbar">
+
+                <div class="panel-section">
+                    <div class="ai-controls">
+                        <button id="autoDetectBtn" class="btn ai-btn" disabled>
+                            <span class="material-icons">auto_awesome</span>
+                            <span>AI 自动识别切割点</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel-divider"></div>
+
+                <div class="panel-section">
+                    <h3>手动调整</h3>
+                    <div class="tools-grid">
+                        <div class="split-tools">
+                            <span class="sub-label">快速版式</span>
+                            <div class="btn-group">
+                                <button id="resetSplitLinesBtn" class="btn secondary" disabled>对半</button>
+                                <button id="threeColumnBtn" class="btn secondary" disabled>三栏</button>
+                            </div>
+                            <div class="btn-group">
+                                <button id="addSplitLineBtn" class="btn secondary" disabled title="添加分割线">
+                                    <span class="material-icons">add</span> 加线
+                                </button>
+                                <button id="removeSplitLineBtn" class="btn secondary" disabled title="移除分割线">
+                                    <span class="material-icons">remove</span> 减线
+                                </button>
+                            </div>
+                            <p class="helper-text">* 拖动红线微调，编号表示导出顺序</p>
+                        </div>
+
+                        <button id="toggleSealLineBtn" class="btn secondary" disabled>
+                            <span class="material-icons">format_shapes</span> 去除密封线
+                        </button>
+
+                        <div class="application-group">
+                            <span class="sub-label">批量应用</span>
+                            <div class="btn-group">
+                                <button id="applyToTypeBtn" class="btn secondary" disabled>同类页</button>
+                                <button id="applyToAllBtn" class="btn secondary" disabled>所有页</button>
+                            </div>
+                            <p class="helper-text">* 同类页指所有奇数页或所有偶数页</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="spacer"></div>
+
+                <div class="panel-section footer-actions">
+                    <input type="file" id="fileInput" accept="application/pdf,image/*" hidden>
+
+                    <div class="quality-control">
+                        <div class="quality-header">
+                            <span class="sub-label">输出质量</span>
+                            <span id="qualityLabel" class="quality-label">中</span>
+                        </div>
+                        <div class="quality-slider-wrap">
+                            <span class="quality-level-label">低</span>
+                            <input type="range" id="qualitySlider" class="quality-slider"
+                                   min="0" max="3" step="1" value="1">
+                            <span class="quality-level-label">原图</span>
+                        </div>
+                    </div>
+
+                    <div class="export-options">
+                        <label class="sub-label" for="exportFitSelect">导出尺寸</label>
+                        <select id="exportFitSelect" class="select-input">
+                            <option value="a4-fit" selected>标准 A4（等比留白）</option>
+                            <option value="a4-fill">标准 A4（拉伸填满）</option>
+                            <option value="wysiwyg">原始裁剪尺寸（所见即所得）</option>
+                        </select>
+                    </div>
+
+                    <button id="exportBtn" class="btn success full-width large shadow-btn" disabled>
+                        <span class="material-icons">save_alt</span> 导出为 PDF (A4)
+                    </button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+
+</html>
